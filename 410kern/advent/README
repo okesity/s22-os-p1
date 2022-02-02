@@ -1,0 +1,35 @@
+"Welcome to Adventure!!  Would you like instructions?"
+
+This is a bare-machine-kernel version of the venerable "Colossal
+Cave Adventure" game.  Developed in the late 1970's by Will Crowther
+and Don Woods as ADVENT, a FORTRAN program running on PDP-10 machines
+(which had 36-bit words!), it was later ported to C and Unix by
+Jim Gillogly.  It is arguably the first work of interactive fiction,
+see:
+
+  https://en.wikipedia.org/wiki/Colossal_Cave_Adventure
+
+This code base derives from DragonFlyBSD's games/adventure:
+
+  git://git.dragonflybsd.org/dragonfly.git
+  commit a4c676668c3db6fb70e69bab092576a9bd1ef054
+
+...and was ported to the 15-410 P1 build environment by Cyrus Bomi
+Daruwala in February of 2021.
+
+PLEASE NOTE: while you are free to distribute the code in this
+directory (all by itself), you probably shouldn't:  pretty much
+all modern Unix-like systems, which at the time of this writing
+includes Linux, have an existing package which will enable you
+to play Adventure.  Meanwhile, you should NOT be distributing
+code containing both this Adventure code and P1 device drivers
+you wrote, because that would be an academic integrity violation.
+
+Finally, most people who want to hack on Adventure should probably
+start from the DragonFlyBSD code rather than this code, because
+some of the hacking done to get it to build in our environment
+is useful rather than tasteful.  Furthermore, most people working
+on interactive fiction these days write in a domain-specific
+higher-level language, see, e.g.:
+
+  https://en.wikipedia.org/wiki/Z-machine

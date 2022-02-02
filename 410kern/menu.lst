@@ -1,0 +1,11 @@
+default=0
+timeout=5
+
+title 410 Console Test Program
+	kernel (fd0)/boot/tester.gz
+
+title Adventure
+	kernel (fd0)/boot/advent.gz
+
+title kern/ mini test kernel
+	kernel (fd0)/boot/kernel.gz
