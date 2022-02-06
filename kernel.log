@@ -1,1 +1,10 @@
-153410659273 kdbg: Hello from a brand new kernel!
+296062764662 kdbg: Hello from a brand new kernel!
+296062765611 kdbg: testing console
+
+296062802638 kdbg: set color
+
+296062807818 kdbg: color code invalid: 65535
+
+296062870718 kdbg: current color 2, preset culor 2
+296062873102 kdbg: cursor: 24, 22
+296062910586 kdbg: cursor: 0, 0

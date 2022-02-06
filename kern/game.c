@@ -38,6 +38,73 @@ void tick(unsigned int numTicks);
 
 volatile static int __kernel_all_done = 0;
 
+void test_console() {
+    clear_console();
+    MAGIC_BREAK;
+
+    show_cursor();
+    MAGIC_BREAK;
+
+    hide_cursor();
+    MAGIC_BREAK;
+
+    set_cursor(1, 1);
+    show_cursor();
+    MAGIC_BREAK;
+
+    lprintf( "set color\n" );
+    set_term_color(FGND_GREEN | BGND_BLACK);
+    MAGIC_BREAK;
+
+    putbyte('a');
+    MAGIC_BREAK;
+
+    putbyte('\n');
+    putbytes("abcd", 4);
+    MAGIC_BREAK;
+
+    putbyte('\b');
+    MAGIC_BREAK;
+
+    putbyte('\r');
+    MAGIC_BREAK;
+
+    putbyte('A');
+    MAGIC_BREAK;
+
+    set_term_color(0xffff);
+    MAGIC_BREAK;
+
+    set_cursor(CONSOLE_HEIGHT - 1, 0);
+    putbytes("hahahahahahahaha", 16);
+    MAGIC_BREAK;
+
+    putbyte((char)'\n');
+    MAGIC_BREAK;
+
+    char* verylong = "A Very long str A Very long str A Very long strA Very long \
+    strA Very long strA Very long strA Very long strA Very long str \
+    strA Very long strA Very long strA Very long strA Very long str \
+    strA Very long strA Very long strA Very long strA Very long str";
+    putbytes(verylong, strlen(verylong));
+    MAGIC_BREAK;
+
+    int color;
+    get_term_color(&color);
+    lprintf("current color %d, preset culor %d", color, FGND_GREEN | BGND_BLACK);
+    MAGIC_BREAK;
+
+    int row, col;
+    get_cursor(&row, &col);
+    lprintf("cursor: %d, %d", row, col);
+    MAGIC_BREAK;
+
+    clear_console();
+    get_cursor(&row, &col);
+    lprintf("cursor: %d, %d", row, col);
+    MAGIC_BREAK;
+}
+
 /** @brief Kernel entrypoint.
  *  
  *  This is the entrypoint for the kernel.  It simply sets up the
@@ -59,23 +126,9 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp)
      */
 
     lprintf( "Hello from a brand new kernel!" );
-    MAGIC_BREAK;
 
-    clear_console();
-    MAGIC_BREAK;
-
-    show_cursor();
-    MAGIC_BREAK;
-
-    set_term_color(FGND_GREEN | BGND_BLACK);
-    MAGIC_BREAK;
-
-    set_cursor(12, 34);
-    MAGIC_BREAK;
-
-    putbyte('a');
-    MAGIC_BREAK;
-
+    lprintf("testing console\n");
+    test_console();
 
     while (!__kernel_all_done) {
         continue;

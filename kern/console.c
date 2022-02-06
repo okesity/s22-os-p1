@@ -7,20 +7,59 @@
 #include <video_defines.h>
 #include <asm.h>
 #include <p1kern.h>
+#include <simics.h>                 /* lprintf() */
+#include <string.h>
 
-int g_color = FGND_WHITE;
-int g_cursor_x = 0;
-int g_cursor_y = 0;
+#define LSB_8(x) ((x) & 0xFF)
+#define MSB_8(x) ((x) >> 8)
+#define COLOR_BIT_LEN 8
 
-void set_crtc(int x, int y) {
+static int g_color = FGND_WHITE | BGND_BLACK;
+static int g_cursor_x = 0; 
+static int g_cursor_y = 0;
+static int g_isHidden = 0;
 
-  uint16_t data = x * CONSOLE_WIDTH + y;
-
-  outb(CRTC_IDX_REG, CRTC_CURSOR_LSB_IDX);
-  outb(CRTC_DATA_REG, data & 0xFF);
+/**
+ * @brief scroll down the console by len line
+ * 
+ * When scrolling down, simply discard the first len line
+ * and copy all data starting from len + 1 line
+ * 
+ * @param len: number of lines to scroll down
+ */
+void scroll_down(int len) {
+  if (len >= CONSOLE_HEIGHT) {
+    // set new screen
+    clear_console();
+  } else {
+    g_cursor_x -= len;
+    // move up existing contends
+    memmove((void*) CONSOLE_MEM_BASE, (void*) (CONSOLE_MEM_BASE + len * 2 * CONSOLE_WIDTH), 
+      2 * (CONSOLE_HEIGHT - len) * CONSOLE_WIDTH);
     
+    // set new lines to be empty
+    memset((void*) (CONSOLE_MEM_BASE + 2 * (CONSOLE_HEIGHT - len) * CONSOLE_WIDTH), 
+      0, 2 * len * CONSOLE_WIDTH);
+  }
+}
+
+void set_crtc(int row, int col) {
+
+  uint16_t data = row * CONSOLE_WIDTH + col;
+
   outb(CRTC_IDX_REG, CRTC_CURSOR_LSB_IDX);
-  outb(CRTC_DATA_REG, data >> 8);
+  outb(CRTC_DATA_REG, LSB_8(data));
+    
+  outb(CRTC_IDX_REG, CRTC_CURSOR_MSB_IDX);
+  outb(CRTC_DATA_REG, MSB_8(data));
+}
+
+void move_cursor_next() {
+  if (g_cursor_y == CONSOLE_WIDTH - 1) {
+    set_cursor(g_cursor_x + 1, 0);
+  } else {
+    set_cursor(g_cursor_x, g_cursor_y + 1);
+  }
 }
 
 
@@ -40,7 +79,22 @@ void set_crtc(int x, int y) {
  *  @return The input character
  */
 int putbyte( char ch ) {
-  draw_char(g_cursor_x, g_cursor_y, ch, g_color);
+  if (ch == '\n') {
+    set_cursor(g_cursor_x + 1, 0);
+  } else if (ch == '\r') {
+    set_cursor(g_cursor_x, 0);
+  } else if (ch == '\b') {
+    if (g_cursor_y == 0) {
+      if (g_cursor_x > 0) 
+        set_cursor(g_cursor_x - 1, CONSOLE_WIDTH - 1);
+    } else {
+      set_cursor(g_cursor_x, g_cursor_y - 1);
+    }
+    draw_char(g_cursor_x, g_cursor_y, '\0', g_color);
+  } else {
+    draw_char(g_cursor_x, g_cursor_y, ch, g_color);
+    move_cursor_next();
+  }
   return ch;
 }
 
@@ -77,6 +131,10 @@ void putbytes(const char* s, int len) {
  *          color code is invalid.
  */
 int set_term_color(int color) {
+  if ((color >> COLOR_BIT_LEN) != 0) {
+    lprintf("color code invalid: %d\n", color);
+    return -1;
+  }
   g_color = color;
   return 0;
 }
@@ -106,7 +164,18 @@ void get_term_color(int* color) {
  *          cursor location is invalid.
  */
 int set_cursor(int row, int col) {
-  set_crtc(row, col);
+  if (row < 0 || col < 0 || col >= CONSOLE_WIDTH) {
+    lprintf("cursor pos invalid %d, %d\n", row, col);
+    return -1;
+  }
+
+  g_cursor_x = row;
+  g_cursor_y = col;
+  if (g_cursor_x > CONSOLE_HEIGHT - 1)
+    scroll_down(g_cursor_x - CONSOLE_HEIGHT + 1);
+
+  if (!g_isHidden)
+    set_crtc(row, col);
   return 0;
 }
 
@@ -131,7 +200,10 @@ void get_cursor(int* row, int* col) {
  *  @return Void.
  */
 void hide_cursor(void) {
-  set_crtc(CONSOLE_WIDTH, CONSOLE_HEIGHT + 1);
+  if (!g_isHidden) {
+    g_isHidden = 1;
+    set_crtc(CONSOLE_WIDTH, CONSOLE_HEIGHT);
+  }
 }
 
 /** @brief Shows the cursor.
@@ -141,18 +213,22 @@ void hide_cursor(void) {
  *  @return Void.
  */
 void show_cursor(void) {
-  set_crtc(g_cursor_x, g_cursor_y);
+  if (g_isHidden) {
+    g_isHidden = 0;
+    set_crtc(g_cursor_x, g_cursor_y);
+  }
 }
 
 /** @brief Clears the entire console.
  *
  * The cursor is reset to the first row and column
+ * If the cursor is hidden, stay hidden
  *
  *  @return Void.
  */
 void clear_console(void) {
-  g_cursor_x = 0;
-  g_cursor_y = 0;
+  memset((void*) CONSOLE_MEM_BASE, 0, CONSOLE_HEIGHT * CONSOLE_WIDTH * 2);
+  set_cursor(0, 0);
 }
 
 /** @brief Prints character ch with the specified color

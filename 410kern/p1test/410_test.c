@@ -41,7 +41,6 @@ kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp)
       panic("oh noes! where are my handlers");
     }
 
-    printf("Starting now!");
     enable_interrupts();
 
     clear_console();
