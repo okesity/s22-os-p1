@@ -74,7 +74,7 @@ CONFIG_NDEBUG =
 # the object files which make up your drivers.
 ##################################################
 #
-COMMON_OBJS = fake.o
+COMMON_OBJS = console.o handler.o fake.o
 
 ##################################################
 # Object files from 410kern/ for just the game

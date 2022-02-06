@@ -34,6 +34,8 @@ void tick(unsigned int numTicks);
 
 #include <string.h>
 
+#include <p1kern.h>
+
 volatile static int __kernel_all_done = 0;
 
 /** @brief Kernel entrypoint.
@@ -57,6 +59,23 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp)
      */
 
     lprintf( "Hello from a brand new kernel!" );
+    MAGIC_BREAK;
+
+    clear_console();
+    MAGIC_BREAK;
+
+    show_cursor();
+    MAGIC_BREAK;
+
+    set_term_color(FGND_GREEN | BGND_BLACK);
+    MAGIC_BREAK;
+
+    set_cursor(12, 34);
+    MAGIC_BREAK;
+
+    putbyte('a');
+    MAGIC_BREAK;
+
 
     while (!__kernel_all_done) {
         continue;
