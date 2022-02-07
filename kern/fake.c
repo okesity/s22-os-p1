@@ -76,21 +76,21 @@
 //   return 0;
 // }
 
-int
-readchar(void)
-{
-  return -1;
-}
+// int
+// readchar(void)
+// {
+//   return -1;
+// }
 
-// Unlike readchar(), we should generally not return quickly, so...
-int
-readline(char *buf, int len)
-{
-  volatile int *p = (int *)0x4; // The course staff has special permission to look here.
-  int initial = *p;
+// // Unlike readchar(), we should generally not return quickly, so...
+// int
+// readline(char *buf, int len)
+// {
+//   volatile int *p = (int *)0x4; // The course staff has special permission to look here.
+//   int initial = *p;
 
-  while (*p == initial)
-	continue;
+//   while (*p == initial)
+// 	continue;
 
-  return -1;
-}
+//   return -1;
+// }

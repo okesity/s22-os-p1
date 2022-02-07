@@ -3,6 +3,16 @@
 
 #include <common_kern.h>
 
+#define GATE_P_MASK 0x70
+#define GATE_DPL_OFFSET 13
+
+typedef struct {
+  uint16_t offset_high16;
+  uint16_t flags;
+  uint16_t seg_selector;
+  uint16_t offset_low16;
+} trap_gate_t;
+
 /*********************************************************************/
 /*                                                                   */
 /* Interface for device-driver initialization and timer callback     */

@@ -10,6 +10,7 @@
 typedef unsigned int size_t;
 typedef unsigned long ptrdiff_t;
 
+typedef unsigned short uint16_t;
 /* WRAPPERS */
 
 typedef unsigned long vm_offset_t;

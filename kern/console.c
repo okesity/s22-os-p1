@@ -9,9 +9,8 @@
 #include <p1kern.h>
 #include <simics.h>                 /* lprintf() */
 #include <string.h>
+#include <algorithm.h>
 
-#define LSB_8(x) ((x) & 0xFF)
-#define MSB_8(x) ((x) >> 8)
 #define COLOR_BIT_LEN 8
 
 static int g_color = FGND_WHITE | BGND_BLACK;
