@@ -9,7 +9,7 @@
 #include <p1kern.h>
 #include <simics.h>                 /* lprintf() */
 #include <string.h>
-#include <algorithm.h>
+#include <commons.h>
 
 #define COLOR_BIT_LEN 8
 
@@ -47,10 +47,10 @@ void set_crtc(int row, int col) {
   uint16_t data = row * CONSOLE_WIDTH + col;
 
   outb(CRTC_IDX_REG, CRTC_CURSOR_LSB_IDX);
-  outb(CRTC_DATA_REG, LSB_8(data));
+  outb(CRTC_DATA_REG, LSB_1b(data));
     
   outb(CRTC_IDX_REG, CRTC_CURSOR_MSB_IDX);
-  outb(CRTC_DATA_REG, MSB_8(data));
+  outb(CRTC_DATA_REG, MSB_1b(data));
 }
 
 void move_cursor_next() {

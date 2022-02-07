@@ -3,11 +3,13 @@
 #include <keyboard.h>
 #include <keyhelp.h>
 #include <seg.h>
-#include <algorithm.h>
+#include <commons.h>
 #include <interrupt_defines.h>
 #include <asm.h>
 
-#define BUFFER_SIZE 512
+#include <string.h>
+
+#define BUFFER_SIZE 128
 static uint8_t data[BUFFER_SIZE] = {0};
 static size_t wr_index = 0;
 static size_t rd_index = 0;
@@ -16,13 +18,13 @@ void init_keyboard() {
 
   // setting the IDT entry
   void* idt_base_addr = idt_base();
+
   trap_gate_t* trap = (trap_gate_t*) idt_base_addr + KEY_IDT_ENTRY;
 
   uint32_t keyboard_asm_handler_addr = (uint32_t) keyboard_asm_handler;
-
-  trap->offset_high16 = MSB_16(keyboard_asm_handler_addr);
-  trap->offset_low16 = LSB_16(keyboard_asm_handler_addr);
-  trap->flags = GATE_P_MASK;
+  trap->offset_high16 = MSB_2b(keyboard_asm_handler_addr);
+  trap->offset_low16 = LSB_2b(keyboard_asm_handler_addr);
+  trap->flags = GATE_FLAG_DEFAULT;
   trap->seg_selector = SEGSEL_KERNEL_CS;
 }
 
@@ -45,18 +47,18 @@ void keyboard_c_handler() {
  **/
 int readchar(void) {
 
-  disable_interrupts();
+  // disable_interrupts();
   while (rd_index != wr_index) {
     kh_type k = process_scancode(data[rd_index]);
     rd_index = (rd_index + 1) % BUFFER_SIZE;
 
     if (KH_HASDATA(k) && KH_ISMAKE(k)) {
-      enable_interrupts();
+      // enable_interrupts();
       return KH_GETCHAR(k);
     }
   }
 
-  enable_interrupts();
+  // enable_interrupts();
   return -1;
 }
 
