@@ -9,11 +9,24 @@
 
 #include <string.h>
 
-#define BUFFER_SIZE 128
+// the maximum number of charactors that can be displayed on the screen
+#define BUFFER_SIZE 2000
+
+// data is a circular buffer with size BUFFER_SIZE
+// when there is no data, wr_index == rd_index
+// the indexes would only increase or wrap around at the end
 static uint8_t data[BUFFER_SIZE] = {0};
 static size_t wr_index = 0;
 static size_t rd_index = 0;
 
+// const string for indication when readline()
+static const char* READLINE_INDICATOR = "\nInput:\n";
+
+/**
+ * @brief ready the keyboard interrupt by putting its asm handler
+ * into the IDT table, location indicated by KEY_IDT_ENTRY
+ * 
+ */
 void init_keyboard() {
 
   // setting the IDT entry
@@ -28,6 +41,12 @@ void init_keyboard() {
   trap->seg_selector = SEGSEL_KERNEL_CS;
 }
 
+/**
+ * @brief C handler for keyboard interrupt
+ *
+ *    Puts the scancode into the buffer and increase the wr_index
+ * 
+ */
 void keyboard_c_handler() {
   data[wr_index] = inb(KEYBOARD_PORT);
   wr_index = (wr_index + 1) % BUFFER_SIZE;
@@ -42,59 +61,67 @@ void keyboard_c_handler() {
  *  This function does not block if there are no characters in the keyboard
  *  buffer
  *
+ *  There is no need to disable interrupts here, because the keyboard interrupt
+ *  will only modify the wr_index, while readchar only modify the rd_index
+ *
  *  @return The next character in the keyboard buffer, or -1 if the keyboard
  *          buffer is currently empty
  **/
 int readchar(void) {
 
-  // disable_interrupts();
   while (rd_index != wr_index) {
+    // keep looking until we have a valid charactor or 
+    // there are no new data in the buffer
     kh_type k = process_scancode(data[rd_index]);
     rd_index = (rd_index + 1) % BUFFER_SIZE;
 
     if (KH_HASDATA(k) && KH_ISMAKE(k)) {
-      // enable_interrupts();
+      // return the valid charactor
       return KH_GETCHAR(k);
     }
   }
 
-  // enable_interrupts();
   return -1;
 }
 
 /** @brief Reads a line of characters into a specified buffer
  *
- * If the keyboard buffer does not already contain a line of input,
- * readline() will spin until a line of input becomes available.
+ * readline() will spin until a line of input is available
+ * and return the new line if either it received the \n character
+ * or it has read len characters
  *
- * If the line is smaller than the buffer, then the complete line,
- * including the newline character, is copied into the buffer. 
- *
- * If the length of the line exceeds the length of the buffer, only
- * len characters should be copied into buf.
- *
- * Available characters should not be committed into buf until
- * there is a newline character available, so the user has a
- * chance to backspace over typing mistakes.
- *
- * While a readline() call is active, the user should receive
- * ongoing visual feedback in response to typing, so that it
- * is clear to the user what text line will be returned by
- * readline().
  *
  *  @param buf Starting address of buffer to fill with a text line
  *  @param len Length of the buffer
  *  @return The number of characters in the line buffer,
  *          or -1 if len is invalid or unreasonably large.
  **/
-int
-readline(char *buf, int len)
-{
-  volatile int *p = (int *)0x4; // The course staff has special permission to look here.
-  int initial = *p;
+int readline(char *buf, int len) {
+  if (len >= BUFFER_SIZE || len < 0)
+    return -1;
 
-  while (*p == initial)
-	continue;
+  int len_read = 0, ch = -1;
 
-  return -1;
+  // prints the readline indicator to console
+  putbytes(READLINE_INDICATOR, strlen(READLINE_INDICATOR));
+
+  while (len_read < len) {
+    ch = readchar();
+    if (ch != -1) {
+      // printing the current char to console
+      putbyte(ch);
+      if (ch == '\b' && len_read > 0) {
+        len_read--;
+      } else if (ch == '\r') {
+        len_read = 0;
+      } else {
+        buf[len_read++] = ch;
+        if (ch == '\n')
+          break;
+      }
+    } 
+  }
+
+  return len_read;
 }
+

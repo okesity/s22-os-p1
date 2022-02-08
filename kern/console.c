@@ -7,16 +7,15 @@
 #include <video_defines.h>
 #include <asm.h>
 #include <p1kern.h>
-#include <simics.h>                 /* lprintf() */
 #include <string.h>
 #include <commons.h>
 
-#define COLOR_BIT_LEN 8
+#define COLOR_BIT_LEN 8 // the bit length of a valid color code
 
-static int g_color = FGND_WHITE | BGND_BLACK;
-static int g_cursor_x = 0; 
-static int g_cursor_y = 0;
-static int g_isHidden = 0;
+static int current_color = FGND_WHITE | BGND_BLACK;
+static int cursor_x = 0; 
+static int cursor_y = 0;
+static int isHidden = 0;
 
 /**
  * @brief scroll down the console by len line
@@ -31,7 +30,7 @@ void scroll_down(int len) {
     // set new screen
     clear_console();
   } else {
-    g_cursor_x -= len;
+    cursor_x -= len;
     // move up existing contends
     memmove((void*) CONSOLE_MEM_BASE, (void*) (CONSOLE_MEM_BASE + len * 2 * CONSOLE_WIDTH), 
       2 * (CONSOLE_HEIGHT - len) * CONSOLE_WIDTH);
@@ -42,7 +41,15 @@ void scroll_down(int len) {
   }
 }
 
+/**
+ * @brief Set the cursor position by sending data to the CRTC
+ * 
+ * @param row row index of the cursor
+ * @param col col index of the cursor
+ */
 void set_crtc(int row, int col) {
+
+  *(char *)(CONSOLE_MEM_BASE + 2 * (row * CONSOLE_WIDTH + col) + 1) = current_color;  
 
   uint16_t data = row * CONSOLE_WIDTH + col;
 
@@ -53,11 +60,16 @@ void set_crtc(int row, int col) {
   outb(CRTC_DATA_REG, MSB_1b(data));
 }
 
+/**
+ * @brief move cursor to the next position
+ *  Start a new line if cursor is at the end of the current line
+ * 
+ */
 void move_cursor_next() {
-  if (g_cursor_y == CONSOLE_WIDTH - 1) {
-    set_cursor(g_cursor_x + 1, 0);
+  if (cursor_y == CONSOLE_WIDTH - 1) {
+    set_cursor(cursor_x + 1, 0);
   } else {
-    set_cursor(g_cursor_x, g_cursor_y + 1);
+    set_cursor(cursor_x, cursor_y + 1);
   }
 }
 
@@ -79,19 +91,19 @@ void move_cursor_next() {
  */
 int putbyte( char ch ) {
   if (ch == '\n') {
-    set_cursor(g_cursor_x + 1, 0);
+    set_cursor(cursor_x + 1, 0);
   } else if (ch == '\r') {
-    set_cursor(g_cursor_x, 0);
+    set_cursor(cursor_x, 0);
   } else if (ch == '\b') {
-    if (g_cursor_y == 0) {
-      if (g_cursor_x > 0) 
-        set_cursor(g_cursor_x - 1, CONSOLE_WIDTH - 1);
+    if (cursor_y == 0) {
+      if (cursor_x > 0) 
+        set_cursor(cursor_x - 1, CONSOLE_WIDTH - 1);
     } else {
-      set_cursor(g_cursor_x, g_cursor_y - 1);
+      set_cursor(cursor_x, cursor_y - 1);
     }
-    draw_char(g_cursor_x, g_cursor_y, '\0', g_color);
+    draw_char(cursor_x, cursor_y, '\0', current_color);
   } else {
-    draw_char(g_cursor_x, g_cursor_y, ch, g_color);
+    draw_char(cursor_x, cursor_y, ch, current_color);
     move_cursor_next();
   }
   return ch;
@@ -100,14 +112,7 @@ int putbyte( char ch ) {
 /** @brief Prints the string s, starting at the current
  *         location of the cursor.
  *
- *  If the string is longer than the current line, the
- *  string fills up the current line and then
- *  continues on the next line. If the string exceeds
- *  available space on the entire console, the screen
- *  scrolls up one line, and then the string
- *  continues on the new line.  If '\n', '\r', and '\b' are
- *  encountered within the string, they are handled
- *  as per putbyte. If len is not a positive integer or s
+ *  If len is not a positive integer or s
  *  is null, the function has no effect.
  *
  *  @param s The string to be printed.
@@ -115,6 +120,9 @@ int putbyte( char ch ) {
  *  @return Void.
  */
 void putbytes(const char* s, int len) {
+  if (len <= 0 || s == 0)
+    return;
+    
   for (int i = 0; i < len; i++) {
     putbyte(s[i]);
   }
@@ -131,10 +139,10 @@ void putbytes(const char* s, int len) {
  */
 int set_term_color(int color) {
   if ((color >> COLOR_BIT_LEN) != 0) {
-    lprintf("color code invalid: %d\n", color);
+    // color exceed 8 bit, meaning it is invalid
     return -1;
   }
-  g_color = color;
+  current_color = color;
   return 0;
 }
 
@@ -146,16 +154,14 @@ int set_term_color(int color) {
  *  @return Void.
  */
 void get_term_color(int* color) {
-  *color = g_color;
+  *color = current_color;
 }
 
 /** @brief Sets the position of the cursor to the
  *         position (row, col).
  *
- *  Subsequent calls to putbytes should cause the console
- *  output to begin at the new position. If the cursor is
- *  currently hidden, a call to set_cursor() does not show
- *  the cursor.
+ *  If the cursor is currently hidden, a call to set_cursor() 
+ * does not show the cursor.
  *
  *  @param row The new row for the cursor.
  *  @param col The new column for the cursor.
@@ -164,16 +170,15 @@ void get_term_color(int* color) {
  */
 int set_cursor(int row, int col) {
   if (row < 0 || col < 0 || col >= CONSOLE_WIDTH) {
-    lprintf("cursor pos invalid %d, %d\n", row, col);
     return -1;
   }
 
-  g_cursor_x = row;
-  g_cursor_y = col;
-  if (g_cursor_x > CONSOLE_HEIGHT - 1)
-    scroll_down(g_cursor_x - CONSOLE_HEIGHT + 1);
+  cursor_x = row;
+  cursor_y = col;
+  if (cursor_x > CONSOLE_HEIGHT - 1)
+    scroll_down(cursor_x - CONSOLE_HEIGHT + 1);
 
-  if (!g_isHidden)
+  if (!isHidden)
     set_crtc(row, col);
   return 0;
 }
@@ -187,8 +192,8 @@ int set_cursor(int row, int col) {
  *  @return Void.
  */
 void get_cursor(int* row, int* col) {
-  *row = g_cursor_x;
-  *col = g_cursor_y;
+  *row = cursor_x;
+  *col = cursor_y;
 }
 
 /** @brief Hides the cursor.
@@ -199,8 +204,8 @@ void get_cursor(int* row, int* col) {
  *  @return Void.
  */
 void hide_cursor(void) {
-  if (!g_isHidden) {
-    g_isHidden = 1;
+  if (!isHidden) {
+    isHidden = 1;
     set_crtc(CONSOLE_WIDTH, CONSOLE_HEIGHT);
   }
 }
@@ -212,9 +217,9 @@ void hide_cursor(void) {
  *  @return Void.
  */
 void show_cursor(void) {
-  if (g_isHidden) {
-    g_isHidden = 0;
-    set_crtc(g_cursor_x, g_cursor_y);
+  if (isHidden) {
+    isHidden = 0;
+    set_crtc(cursor_x, cursor_y);
   }
 }
 

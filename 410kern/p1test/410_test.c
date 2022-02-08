@@ -31,7 +31,6 @@ void tick(unsigned int numTicks)
 {
     if (numTicks % 100 == 0)
       ++seconds;
-
 }
 
 /* --- Kernel entrypoint --- */

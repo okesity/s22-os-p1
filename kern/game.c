@@ -38,6 +38,10 @@ void tick(unsigned int numTicks);
 
 volatile static int __kernel_all_done = 0;
 
+/**
+ * @brief Test the correctness of the console 
+ * 
+ */
 void test_console() {
     clear_console();
     MAGIC_BREAK;
@@ -139,9 +143,19 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp)
 
     MAGIC_BREAK;
     wait_char('c'); putbyte('d');
+    wait_char('c'); putbyte('d');
+    wait_char('c'); putbyte('d');
+    MAGIC_BREAK;
+
+    lprintf("testing readline\n");
 
     while (!__kernel_all_done) {
-        continue;
+      char buf[20] = {0};
+      int rv = readline(buf, 20);
+      lprintf("read line rv %d\n", rv);
+
+      printf("%s",buf);
+      MAGIC_BREAK;
     }
 
     return 0;

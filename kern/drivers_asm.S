@@ -1,4 +1,5 @@
 
+# timer handler asm entry
 .global timer_asm_handler
 timer_asm_handler:
   pusha
@@ -6,6 +7,7 @@ timer_asm_handler:
   popa
   iret
 
+# keyboard handler asm entry
 .global keyboard_asm_handler
 keyboard_asm_handler:
   pusha

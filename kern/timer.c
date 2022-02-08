@@ -7,17 +7,22 @@
 #include <commons.h>
 #include <p1kern.h>
 
-#include <simics.h>                 /* lprintf() */
-
 #define TIMER_INT_RATE 11931      // rate for generating 10 milliseconds interrupts
 
 
-static unsigned int g_numTicks = 0;
-static void (*g_timer_callback)(unsigned int) = 0;
+static unsigned int numTicks = 0;   // current numTick record
+static void (*timer_callback)(unsigned int) = 0; // callback specified by application
 
+/**
+ * @brief ready the timer interrupt by putting its asm handler
+ * into the IDT table, location indicated by TIMER_IDT_ENTRY
+ *
+ *  Initialize the timer at a rate defined by TIMER_INT_RATE
+ * 
+ */
 void init_timer(void (*tickback)(unsigned int)) {
 
-  g_timer_callback = tickback;
+  timer_callback = tickback;
 
   // setting the IDT entry
   void* idt_base_addr = idt_base();
@@ -36,11 +41,17 @@ void init_timer(void (*tickback)(unsigned int)) {
   outb(TIMER_PERIOD_IO_PORT, MSB_1b(TIMER_INT_RATE));
 }
 
-
+/**
+ * @brief C handler for timer interrupt
+ *
+ *  Increment the numTick and passed it to 
+ *  the callback function 
+ * 
+ */
 void timer_c_handler() {
-  g_numTicks++;
-  if (g_timer_callback != 0)
-    (*g_timer_callback)(g_numTicks);
+  numTicks++;
+  if (timer_callback != 0)
+    (*timer_callback)(numTicks);
 
   // ack
   outb(INT_CTL_PORT, INT_ACK_CURRENT);
