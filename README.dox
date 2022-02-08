@@ -4,9 +4,27 @@
 
 @author Di Hu (dihu@andrew.cmu.edu)
 
-Ideally, this is not a place to say which functions appear
-in which files, or to narrate what code does step by step.
-Please use most of the README to document design decisions
-that you made.
+- Link: https://www.cs.cmu.edu/~410/p1/proj1.html
+
+The main task for P1 is to develop a game called Adventure
+
+The Game part is already given, the rest of the task is to 
+develop keyboard, timer and console drivers
+
+1. Console
+ - the console display is controlled by a region of memory through MMIO
+ - the cursor is controlled by CRTC through IO ports
+
+2. Timer
+ - the timer is interrupt driven, communicated through IO ports
+ - for this task, the timer is configured to fire an interrupt every 10 milliseconds
+
+3. Keyboard
+ - the keyboard is also interrupt driven through IO ports
+ - on the keyboard interrupt, a one-byte scan code will be read from keyboard port
+   and stored in a ring buffer defined in `keyboard.c`. 
+   - the ring buffer has two indexes, the read index `rd_index` and write index `wr_index`
+     when there is no data in the buffer, rd_index == wr_index
+   - the indexes always increment. When they reach the end of the buffer, it is reset to 0
 
 */

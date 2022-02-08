@@ -96,12 +96,14 @@ int putbyte( char ch ) {
     set_cursor(cursor_x, 0);
   } else if (ch == '\b') {
     if (cursor_y == 0) {
-      if (cursor_x > 0) 
+      if (cursor_x > 0) {
+        draw_char(cursor_x - 1, cursor_y, '\0', current_color);
         set_cursor(cursor_x - 1, CONSOLE_WIDTH - 1);
+      }
     } else {
+      draw_char(cursor_x, cursor_y - 1, '\0', current_color);
       set_cursor(cursor_x, cursor_y - 1);
     }
-    draw_char(cursor_x, cursor_y, '\0', current_color);
   } else {
     draw_char(cursor_x, cursor_y, ch, current_color);
     move_cursor_next();

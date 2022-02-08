@@ -38,82 +38,81 @@ void tick(unsigned int numTicks);
 
 volatile static int __kernel_all_done = 0;
 
+void wait_char(char testc){
+  char c;
+  do{
+    c = readchar();
+  }while(c != testc);
+}
+
 /**
- * @brief Test the correctness of the console 
+ * @brief Test cases for the console 
  * 
  */
 void test_console() {
     clear_console();
-    MAGIC_BREAK;
 
     show_cursor();
-    MAGIC_BREAK;
+    wait_char('c');
 
     hide_cursor();
-    MAGIC_BREAK;
+    wait_char('c');;
 
     set_cursor(1, 1);
     show_cursor();
-    MAGIC_BREAK;
+    wait_char('c');;
 
     lprintf( "set color\n" );
     set_term_color(FGND_GREEN | BGND_BLACK);
-    MAGIC_BREAK;
+    wait_char('c');;
 
     putbyte('a');
-    MAGIC_BREAK;
+    wait_char('c');;
 
     putbyte('\n');
     putbytes("abcd", 4);
-    MAGIC_BREAK;
+    wait_char('c');;
 
     putbyte('\b');
-    MAGIC_BREAK;
+    wait_char('c');;
 
     putbyte('\r');
-    MAGIC_BREAK;
+    wait_char('c');;
 
     putbyte('A');
-    MAGIC_BREAK;
+    wait_char('c');;
 
-    set_term_color(0xffff);
-    MAGIC_BREAK;
+    set_term_color(0xffff); // invalid color
+    wait_char('c');;
 
     set_cursor(CONSOLE_HEIGHT - 1, 0);
     putbytes("hahahahahahahaha", 16);
-    MAGIC_BREAK;
+    wait_char('c');;
 
     putbyte((char)'\n');
-    MAGIC_BREAK;
+    wait_char('c');;
 
     char* verylong = "A Very long str A Very long str A Very long strA Very long \
     strA Very long strA Very long strA Very long strA Very long str \
     strA Very long strA Very long strA Very long strA Very long str \
     strA Very long strA Very long strA Very long strA Very long str";
     putbytes(verylong, strlen(verylong));
-    MAGIC_BREAK;
+    wait_char('c');;
 
     int color;
     get_term_color(&color);
     lprintf("current color %d, preset culor %d", color, FGND_GREEN | BGND_BLACK);
-    MAGIC_BREAK;
+    wait_char('c');;
 
     int row, col;
     get_cursor(&row, &col);
     lprintf("cursor: %d, %d", row, col);
-    MAGIC_BREAK;
+    wait_char('c');;
 
     clear_console();
     get_cursor(&row, &col);
     lprintf("cursor: %d, %d", row, col);
-    MAGIC_BREAK;
-}
-
-void wait_char(char testc){
-  char c;
-  do{
-    c = readchar();
-  }while(c != testc);
+    wait_char('c');;
 }
 
 /** @brief Kernel entrypoint.
@@ -139,7 +138,7 @@ int kernel_main(mbinfo_t *mbinfo, int argc, char **argv, char **envp)
     lprintf( "Hello from a brand new kernel!" );
 
     lprintf("testing console\n");
-    // test_console();
+    test_console();
 
     MAGIC_BREAK;
     wait_char('c'); putbyte('d');
