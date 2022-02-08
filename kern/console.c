@@ -97,7 +97,7 @@ int putbyte( char ch ) {
   } else if (ch == '\b') {
     if (cursor_y == 0) {
       if (cursor_x > 0) {
-        draw_char(cursor_x - 1, cursor_y, '\0', current_color);
+        draw_char(cursor_x - 1, CONSOLE_WIDTH - 1, '\0', current_color);
         set_cursor(cursor_x - 1, CONSOLE_WIDTH - 1);
       }
     } else {
